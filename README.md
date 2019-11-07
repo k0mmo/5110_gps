@@ -40,3 +40,8 @@ Info:
 <br>    <li>2.) Driver:</li>
                  <ul>
 <br>                     <li>Adafruit GPS</p></li>
+</ul>
+<br> Known Issues:
+<br><ul>
+        <li>Gps will parser correctly in serial but will not display correctly on the lcd</li>
+</ul
