@@ -41,7 +41,8 @@ Info:
                  <ul>
 <br>                     <li>Adafruit GPS</p></li>
 </ul>
+</ul>
 <br> Known Issues:
 <br><ul>
-        <li>Gps will parser correctly in serial but will not display correctly on the lcd</li>
+        <li>Gps will parse correctly in serial but will not display correctly on the lcd</li>
 </ul
