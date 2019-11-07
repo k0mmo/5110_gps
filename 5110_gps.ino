@@ -1,4 +1,4 @@
-/* adapted from Adafruit I2C GPS example
+/* adapted from Adafruit software serial GPS example
  *  
  *  Lcd pin lay out:
  *  rst - 10K resistor - arduino pin 3
@@ -11,26 +11,42 @@
  *  gnd - gnd
  *  
  *  Gps pin layout:
+ *  rx - pin 8
+ *  tx - pin 9
+ *  vin - 5v pwr
+ *  gnd - gnd 
  */
+
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
+#include <Nokia_LCD.h>
 
-// change numbers to match wireing
-SoftwareSerial mySerial(0, 1);
-
+// you can change the pin numbers to match your wiring:
+SoftwareSerial mySerial(9, 8);
 Adafruit_GPS GPS(&mySerial);
 
-// Set GPSECHO to 'false' to turn off echoing the GPS data, set to true for debugging and raw sentences
-// Set to 'true' if you want to debug and listen to the raw GPS sentences
+Nokia_LCD lcd(7 /* CLK */, 6 /* DIN */, 5 /* DC */, 4 /* CE */, 3 /* RST */); // pin layout from lcd to uno
+
+// Set GPSECHO to 'false' to turn off echoing the GPS data, Set to 'true' for debugging and listen to the raw GPS sentences
 #define GPSECHO  true
 
 void setup()
 {
 
-  // connect at 115200 
+  // connect at 115200 for quick updates
   Serial.begin(115200);
   delay(5000);
-  Serial.println("Adafruit GPS library basic test!");
+  Serial.println("Gps serial parsing");
+  lcd.begin();
+  lcd.setContrast(50); // sets lcd contrast, best between 40 and 60
+  lcd.setCursor(0,0);
+  lcd.print("  Gps Location ");
+  lcd.setCursor(0,1);
+  lcd.print("_________________");
+  lcd.setCursor(0,3);
+  lcd.print(" Looking for fix");
+  lcd.setCursor(0,4);
+  lcd.print("  Please wait");
 
   // 9600 NMEA is the default baud rate for Adafruit MTK GPS's- some use 4800
   GPS.begin(9600);
@@ -40,23 +56,25 @@ void setup()
   // Set the update rate
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
   
-  // checks to see if antenna is connected or not
-  GPS.sendCommand(PGCMD_ANTENNA);
+  GPS.sendCommand(PGCMD_ANTENNA); // checks for antenna status
 
+  delay(1000);
+  // Ask for firmware version
+  mySerial.println(PMTK_Q_RELEASE);
 }
 
 uint32_t timer = millis();
-
 void loop()                     // run over and over again
 {
   char c = GPS.read();
   if ((c) && (GPSECHO))
     Serial.write(c);
 
-  
+  // if a sentence is received, we can check the checksum, parse it...
   if (GPS.newNMEAreceived()) {
-    
-    (GPS.parse(GPS.lastNMEA())); 
+
+    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+      return;  // we can fail to parse a sentence in which case we should just wait for another
   }
 
   // if millis() or timer wraps around, we'll just reset it
@@ -95,6 +113,15 @@ void loop()                     // run over and over again
       Serial.print("Angle: "); Serial.println(GPS.angle);
       Serial.print("Altitude: "); Serial.println(GPS.altitude);
       Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
+      lcd.clear(false);
+      lcd.setCursor(0,0);
+      lcd.print("Gps signal found");
+      lcd.setCursor(0,1);
+      lcd.print("Sat# "); lcd.print((int)GPS.satellites);
+      lcd.setCursor(0,3); lcd.print("Location:");
+      lcd.setCursor(0,4); lcd.print("Lat: "); lcd.print(GPS.latitude, 4); lcd.print(GPS.lat);
+      lcd.setCursor(0,5); lcd.print("Lon: "); lcd.print(GPS.longitude, 4); lcd.println(GPS.lon); 
+      
     }
   }
 }
